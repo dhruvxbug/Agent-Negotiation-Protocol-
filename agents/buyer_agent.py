@@ -116,7 +116,7 @@ def run_buyer_agent():
             reasoning = strategy["reasoning"]
             new_bid_wei = int(Web3.to_wei(new_bid_usdc / 1000, "ether"))
 
-            print(f"[Buyer] Claude says: bid {new_bid_usdc:.4f} USDC — {reasoning}")
+            print(f"[Buyer] LLM says: bid {new_bid_usdc:.4f} USDC — {reasoning}")
 
             client.submit_buyer_bid(session_id, new_bid_wei)
             last_submitted_round = current_round

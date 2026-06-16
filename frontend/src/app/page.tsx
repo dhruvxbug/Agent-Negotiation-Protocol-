@@ -12,6 +12,9 @@ import {
   ResponsiveContainer,
   ReferenceArea,
 } from "recharts";
+import Hero from "@/components/Hero";
+import LogoMarquee from "@/components/LogoMarquee";
+import Footer from "@/components/Footer";
 
 const FUJI_RPC = "https://api.avax-test.network/ext/bc/C/rpc";
 const ENGINE_ADDRESS = process.env.NEXT_PUBLIC_ENGINE_ADDRESS || "";
@@ -63,7 +66,6 @@ type AgentInfo = {
 };
 
 const STATUS_MAP = ["OPEN", "ACTIVE", "AGREED", "EXPIRED", "CANCELLED"];
-const STATUS_COLORS = ["#3b82f6", "#eab308", "#22c55e", "#ef4444", "#6b7280"];
 
 function truncateAddr(addr: string) {
   if (!addr) return "";
@@ -89,7 +91,7 @@ function getCountdown(deadline: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function Home() {
+function NegotiationDashboard() {
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [engine, setEngine] = useState<ethers.Contract | null>(null);
   const [registry, setRegistry] = useState<ethers.Contract | null>(null);
@@ -221,11 +223,10 @@ export default function Home() {
   const gap = gapPercent();
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-6">
-      {/* Header */}
-      <header className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
+    <>
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
         <div>
-          <h1 className="text-2xl font-bold text-white">Autonomous Negotiation Protocol</h1>
+          <h2 className="text-2xl font-bold text-white">Negotiation Monitor</h2>
           <p className="text-sm text-gray-400">AI agents negotiate prices on Avalanche Fuji C-Chain</p>
         </div>
         <div className="flex gap-4">
@@ -252,11 +253,9 @@ export default function Home() {
             </div>
           )}
         </div>
-      </header>
+      </div>
 
-      {/* Main grid */}
       <div className="grid grid-cols-2 gap-6">
-        {/* Left: Session Panel */}
         <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
           <h2 className="text-lg font-semibold mb-4">Session Panel</h2>
           {session ? (
@@ -311,7 +310,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Right: Offer Feed */}
         <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
           <h2 className="text-lg font-semibold mb-4">Offer Feed</h2>
           <div className="h-[300px] overflow-y-auto space-y-2">
@@ -334,7 +332,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Chart */}
       <div className="mt-6 bg-gray-900 rounded-xl p-5 border border-gray-800">
         <h2 className="text-lg font-semibold mb-4">Negotiation Chart</h2>
         <div className="h-[300px]">
@@ -373,9 +370,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Bottom Panel */}
       <div className="grid grid-cols-2 gap-6 mt-6">
-        {/* x402 Payment Panel */}
         <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
           <h2 className="text-lg font-semibold mb-4">x402 Payment</h2>
           {session?.status === 2 ? (
@@ -397,7 +392,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Reputation Panel */}
         <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
           <h2 className="text-lg font-semibold mb-4">Reputation</h2>
           <div className="space-y-4">
@@ -430,6 +424,23 @@ export default function Home() {
           </div>
         </div>
       </div>
+    </>
+  );
+}
+
+export default function Home() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-100">
+      <div className="px-4 md:px-8 pt-8 md:pt-12 pb-6 flex flex-col items-center">
+        <Hero />
+        <LogoMarquee />
+      </div>
+
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 mt-8">
+        <NegotiationDashboard />
+      </div>
+
+      <Footer />
     </div>
   );
 }

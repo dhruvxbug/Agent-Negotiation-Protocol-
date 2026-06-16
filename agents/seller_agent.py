@@ -189,7 +189,7 @@ def run_seller_agent():
                 reasoning = strategy["reasoning"]
                 new_ask_wei = int(Web3.to_wei(new_ask_usdc / 1000, "ether"))
 
-                print(f"[Seller] Claude says: ask {new_ask_usdc:.4f} USDC — {reasoning}")
+                print(f"[Seller] LLM says: ask {new_ask_usdc:.4f} USDC — {reasoning}")
 
                 client.submit_seller_ask(session_id_bytes, new_ask_wei)
                 last_submitted[round_key] = True

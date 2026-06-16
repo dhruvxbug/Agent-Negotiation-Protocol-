@@ -1,11 +1,59 @@
 import os
 import json
-import anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+def call_llm(prompt: str) -> str:
+    provider = os.getenv("LLM_PROVIDER", "anthropic").strip().lower()
+
+    if provider == "anthropic":
+        import anthropic
+        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        model = os.getenv("LLM_MODEL", "claude-sonnet-4-6")
+        response = client.messages.create(
+            model=model,
+            max_tokens=200,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.content[0].text.strip()
+
+    elif provider == "groq":
+        import openai
+        client = openai.OpenAI(
+            api_key=os.getenv("GROQ_API_KEY"),
+            base_url="https://api.groq.com/openai/v1"
+        )
+        model = os.getenv("LLM_MODEL", "llama3-70b-8192")
+        response = client.chat.completions.create(
+            model=model,
+            max_tokens=200,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content.strip()
+
+    elif provider == "openrouter":
+        import openai
+        client = openai.OpenAI(
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+            base_url="https://openrouter.ai/api/v1"
+        )
+        model = os.getenv("LLM_MODEL", "openai/gpt-4o")
+        response = client.chat.completions.create(
+            model=model,
+            max_tokens=200,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content.strip()
+
+    else:
+        raise ValueError(f"Unsupported LLM provider: {provider}. Choose from: anthropic, groq, openrouter")
+
+
+def parse_json_response(raw: str) -> dict:
+    raw = raw.replace("```json", "").replace("```", "").strip()
+    return json.loads(raw)
 
 
 def get_buyer_strategy(
@@ -45,15 +93,8 @@ STRATEGY RULES:
 Respond ONLY with valid JSON, no other text:
 {{"offer": <number>, "reasoning": "<one concise sentence explaining this bid>"}}"""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=200,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    raw = response.content[0].text.strip()
-    raw = raw.replace("```json", "").replace("```", "").strip()
-    result = json.loads(raw)
+    raw = call_llm(prompt)
+    result = parse_json_response(raw)
 
     result["offer"] = min(float(result["offer"]), budget_cap_usdc)
     result["offer"] = max(float(result["offer"]), 0.01)
@@ -98,15 +139,8 @@ STRATEGY RULES:
 Respond ONLY with valid JSON, no other text:
 {{"offer": <number>, "reasoning": "<one concise sentence explaining this ask>"}}"""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=200,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    raw = response.content[0].text.strip()
-    raw = raw.replace("```json", "").replace("```", "").strip()
-    result = json.loads(raw)
+    raw = call_llm(prompt)
+    result = parse_json_response(raw)
 
     result["offer"] = max(float(result["offer"]), floor_price_usdc)
 

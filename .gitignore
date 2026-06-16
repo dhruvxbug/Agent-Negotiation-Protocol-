@@ -20,3 +20,8 @@ frontend/out/
 *.log
 coverage/
 coverage.json
+
+GUIDE.md 
+MASTER_PROMPT.md
+demo.sh
+MASTER_PROMPT.md 
