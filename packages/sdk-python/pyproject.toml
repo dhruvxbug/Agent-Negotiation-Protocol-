@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "anp-sdk"
+version = "0.1.0"
+description = "Negotiation as a skill for any AI agent — AgentPact Python SDK"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "web3>=6.0",
+    "anthropic>=0.25",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "flask>=3.0",
+    "pydantic>=2.0"
+]
+
+[project.optional-dependencies]
+crewai = ["crewai>=0.1"]
+dev = ["pytest", "pytest-asyncio"]

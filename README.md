@@ -1,136 +1,144 @@
-# Autonomous Negotiation Protocol (ANP)
+# AgentPact
 
-**Agents negotiate price autonomously. x402 fires on convergence. ERC-8004 informs strategy.**
+**Negotiation as a skill for every AI agent.**
 
-Two AI agents — a Buyer and a Seller — negotiate the price of a digital service on-chain via iterative offers on Avalanche Fuji C-Chain. When bids converge, a smart contract triggers atomic USDC payment via x402. ERC-8004 reputation determines how each agent negotiates — high-reputation sellers hold higher floors, buyers with strong payment history get better deals.
-
-Built for **Team1 India's Speedrun: Agentic Payments** hackathon.
+A three-layer protocol stack for autonomous AI agent negotiation on Avalanche Fuji C-Chain: open smart contracts for on-chain negotiation state, a drop-in SDK for any agent framework (Python + TypeScript), and a marketplace where agents discover each other, negotiate autonomously, and settle via x402 payments.
 
 ---
 
-## How It Works
+## Architecture
 
-1. **Buyer opens a session** — defines service, budget cap, and max negotiation rounds on-chain
-2. **Seller discovers the session** — polls the contract, reviews buyer reputation
-3. **Negotiation rounds** — each round:
-   - Seller submits an ask (decreasing)
-   - Buyer submits a bid (increasing)
-   - Claude decides each move using reputation-aware strategy prompts
-4. **Convergence** — when `bid >= ask`, the midpoint is settled as `agreedPrice`
-5. **x402 payment** — buyer pays seller's wallet directly via on-chain transfer with HTTP 402 flow
-6. **Feedback** — both agents submit on-chain reputation ratings after deal completes
-
-### Convergence Example
-
-| Round | Seller Ask (USDC) | Buyer Bid (USDC) | Gap |
-|-------|------------------|-----------------|-----|
-| 0     | 100.00           | 20.00           | 80% |
-| 1     | 85.00            | 40.00           | 53% |
-| 2     | 73.00            | 58.00           | 21% |
-| 3     | 65.00            | 65.00           | 0% → **DEAL** |
-
----
-
-## Tech Stack
-
-- **Blockchain**: Avalanche Fuji Testnet (C-Chain, chainId 43113)
-- **Smart Contracts**: Solidity 0.8.20 + Hardhat
-- **Agents**: Python 3.11 + web3.py + Anthropic Python SDK
-- **AI Strategy**: Claude claude-sonnet-4-6 via Anthropic API
-- **Payment Protocol**: x402 (HTTP 402 based, manual implementation)
-- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS + ethers.js
-- **Contract Testing**: Hardhat + chai
-
----
-
-## Deployed Contracts
-
-- AgentRegistry: [Fuji Snowtrace link] (fill after deploy)
-- NegotiationEngine: [Fuji Snowtrace link] (fill after deploy)
-
----
-
-## How to Run
-
-```bash
-# Install JS deps
-npm install
-
-# Install Python deps
-pip install web3 anthropic python-dotenv requests flask
-
-# Configure
-cp .env.example .env
-# Fill in ANTHROPIC_API_KEY, BUYER_PRIVATE_KEY, SELLER_PRIVATE_KEY, DEPLOYER_PRIVATE_KEY
-
-# Deploy contracts
-npx hardhat run scripts/deploy.js --network fuji
-# Copy AGENT_REGISTRY_ADDRESS and NEGOTIATION_ENGINE_ADDRESS to .env
-
-# Seed agents on-chain
-python scripts/seed_agents.py
-
-# Run demo
-./demo.sh
 ```
+agentpact/
+├── packages/
+│   ├── contracts/          # Solidity smart contracts (AgentRegistry, NegotiationEngine, SkillRegistry)
+│   ├── sdk-python/         # Python SDK (anp_sdk) — pip-installable agent negotiation toolkit
+│   ├── sdk-js/             # TypeScript SDK — npm-installable negotiation client
+│   └── marketplace/        # Next.js 14 marketplace — agent browser, live session viewer, leaderboard
+├── agents/                 # Demo agents (buyer_demo.py, seller_demo.py)
+├── .env / .env.example
+├── turbo.json              # Turborepo build orchestration
+└── package.json            # Monorepo root with npm workspaces
+```
+
+---
+
+## Smart Contracts (Fuji C-Chain)
+
+| Contract | Purpose |
+|----------|---------|
+| **AgentRegistry** | ERC-8004 identity + reputation. Agents register, submit feedback, get discovered by reputation. |
+| **NegotiationEngine** | On-chain negotiation state machine. Open sessions, submit bids/asks, reach convergence. |
+| **SkillRegistry** | SDK attestation layer. Agents prove on-chain which SDK skills they have installed. |
+
+All contracts compiled with Solidity 0.8.20, Hardhat, and tested (30/30 tests passing).
+
+---
+
+## SDK Quickstart (Python)
+
+```python
+from anp_sdk import AgentSDK
+
+# Seller: register and listen for buyers
+sdk = AgentSDK(private_key="0x...", chain="fuji")
+sdk.setup(name="MyAgent", niche="data-analysis", framework="raw")
+sdk.list_as_seller(service_content={"data": "..."}, floor_price_usdc=40.0)
+```
+
+```python
+# Buyer: find and hire a seller
+sdk = AgentSDK(private_key="0x...", chain="fuji")
+sdk.setup(name="BuyerAgent", niche="data-analysis", framework="raw")
+result = sdk.hire(service="Analyze DeFi protocols", max_price_usdc=100.0)
+print(result["content"])
+```
+
+---
+
+## Marketplace (Next.js)
+
+Live dashboard at `packages/marketplace`:
+- **Agent Browser** — search, filter by niche/reputation, SDK-certified toggle
+- **Agent Profile** — reputation score, skill attestations, deal history
+- **Negotiation Viewer** — live chart with recharts (offer convergence animation), offer feed, x402 payment status
+- **Leaderboard** — ranked by on-chain reputation with real-time updates
 
 ---
 
 ## How x402 Is Used
 
-The x402 protocol (HTTP 402 Payment Required) is implemented manually:
-
 1. Buyer requests seller's `/service` endpoint
-2. Seller returns **402** with payment address and chain info
-3. Buyer sends on-chain AVAX transfer (simulating USDC for demo)
-4. Buyer retries with `X-Payment-Tx` header containing the tx hash
-5. Seller verifies the transaction on-chain, returns the service content
+2. Seller returns **402 Payment Required** with payment address
+3. Buyer sends on-chain AVAX transfer
+4. Buyer retries with `X-Payment-Tx` header
+5. Seller verifies on-chain, returns service content
 
-No platform middleware. Buyer pays seller's wallet directly.
+No middleware. Buyer pays seller's wallet directly.
 
 ---
 
 ## How ERC-8004 Is Used
 
-- **Identity registry** — both agents register with name, niche, and wallet
-- **Reputation scores** — start at 5.0/10, updated via weighted average after each deal
-- **Strategy influence** — reputation feeds directly into Claude's prompt:
-  - High-reputation sellers (>8.0) hold higher floors
-  - Buyers with strong payment history get more generous seller concessions
-  - Low-reputation agents (<2.0) are ignored
-- **Feedback loop** — `submitFeedback()` writes on-chain ratings after each deal
+- **Identity** — agents register with name, niche, and wallet on-chain
+- **Reputation** — start at 5.0/10, updated via weighted averaging after each deal
+- **Discovery** — buyers filter sellers by minimum reputation before opening sessions
+- **Strategy** — reputation feeds into AI negotiation decisions
 
 ---
 
-## Project Structure
+## How Avalanche Is Used
 
-```
-├── contracts/
-│   ├── AgentRegistry.sol        # ERC-8004 identity & reputation
-│   ├── NegotiationEngine.sol    # Negotiation state machine
-│   └── test/
-│       └── NegotiationEngine.test.js
-├── agents/
-│   ├── contract_client.py       # web3.py contract wrapper
-│   ├── strategy.py              # Claude AI strategy prompts
-│   ├── x402_client.py           # x402 payment protocol
-│   ├── buyer_agent.py           # Autonomous buyer agent
-│   └── seller_agent.py          # Autonomous seller agent
-├── scripts/
-│   ├── deploy.js                # Contract deployment
-│   └── seed_agents.py           # On-chain agent registration
-├── frontend/                    # Next.js monitoring UI
-├── demo.sh                      # One-command demo launcher
-├── hardhat.config.js
-├── .env / .env.example
-└── README.md
+All state lives on Fuji C-Chain (chainId 43113):
+- Every agent registration is an on-chain transaction
+- Every offer (bid/ask) is an on-chain transaction
+- Deal settlement, reputation updates, and skill attestations are all on-chain
+- Marketplace reads contract state via ethers.js JSON-RPC provider
+
+---
+
+## Deployment
+
+```bash
+# 1. Install dependencies
+npm install
+pip install -e packages/sdk-python
+
+# 2. Configure
+cp .env.example .env
+# Fill in PRIVATE_KEYs, ANTHROPIC_API_KEY
+
+# 3. Deploy contracts to Fuji
+cd packages/contracts
+npx hardhat run scripts/deploy.js --network fuji
+# Copy addresses to .env
+
+# 4. Build marketplace
+cd packages/marketplace && npm run build
+
+# 5. Run demo agents
+cd agents && bash run_demo.sh
+
+# 6. Start marketplace
+cd packages/marketplace && npm run dev
+# Open http://localhost:3000
 ```
 
 ---
 
-## What This Demonstrates
+## Testing
 
-- **x402**: Full protocol flow — HTTP 402 → on-chain payment → service delivery, live on Fuji
-- **ERC-8004**: On-chain identity and reputation driving AI strategy
-- **Avalanche C-Chain**: Every offer is an on-chain tx. Settlement is on-chain. Snowtrace links for everything
-- **Autonomous**: Zero human decisions after `python buyer_agent.py`. The entire economy runs itself
+```bash
+# Contract tests (30 tests)
+cd packages/contracts && npx hardhat test
+
+# Python SDK tests
+cd packages/sdk-python && pytest tests/
+
+# Marketplace build
+cd packages/marketplace && npm run build
+```
+
+---
+
+Built for **Team1 India Speedrun: Agentic Payments** (Avalanche Fuji C-Chain).

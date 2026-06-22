@@ -1,0 +1,544 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "agreedPrice",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      }
+    ],
+    "name": "DealReached",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "NegotiationExpired",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "round",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "role",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "OfferSubmitted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      }
+    ],
+    "name": "SellerJoined",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "cancelledBy",
+        "type": "address"
+      }
+    ],
+    "name": "SessionCancelled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "serviceDescription",
+        "type": "string"
+      }
+    ],
+    "name": "SessionOpened",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "buyerSessions",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "cancelSession",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "expireSession",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getLatestOffers",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "latestBid",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "latestAsk",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "round",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getOfferHistory",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "bids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "asks",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      }
+    ],
+    "name": "getOpenSessionsForSeller",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "openSessions",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getSession",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "sessionId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "seller",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "serviceDescription",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "buyerBudgetCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "currentRound",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxRounds",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "agreedPrice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum NegotiationEngine.SessionStatus",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "buyerOffers",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "sellerOffers",
+            "type": "uint256[]"
+          }
+        ],
+        "internalType": "struct NegotiationEngine.Session",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTotalSessions",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "serviceDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "buyerBudgetCap",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxRounds",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "durationSeconds",
+        "type": "uint256"
+      }
+    ],
+    "name": "openSession",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "sellerSessions",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "sessionIds",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "sessions",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "serviceDescription",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "buyerBudgetCap",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "currentRound",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxRounds",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "agreedPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum NegotiationEngine.SessionStatus",
+        "name": "status",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bidAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "submitBuyerBid",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "sessionId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "askAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "submitSellerAsk",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

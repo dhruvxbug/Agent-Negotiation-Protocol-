@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { ethers } from "ethers";
 import {
   LineChart,
@@ -13,7 +13,6 @@ import {
   ReferenceArea,
 } from "recharts";
 import Hero from "@/components/Hero";
-import LogoMarquee from "@/components/LogoMarquee";
 import Footer from "@/components/Footer";
 
 const FUJI_RPC = "https://api.avax-test.network/ext/bc/C/rpc";
@@ -63,6 +62,7 @@ type AgentInfo = {
   reputation: number;
   dealsCompleted: number;
   totalEarned: number;
+  wallet: string;
 };
 
 const STATUS_MAP = ["OPEN", "ACTIVE", "AGREED", "EXPIRED", "CANCELLED"];
@@ -91,8 +91,12 @@ function getCountdown(deadline: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function getReadonlyProvider() {
+  return new ethers.JsonRpcProvider(FUJI_RPC);
+}
+
 function NegotiationDashboard() {
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const [provider, setProvider] = useState<ethers.AbstractProvider | null>(null);
   const [engine, setEngine] = useState<ethers.Contract | null>(null);
   const [registry, setRegistry] = useState<ethers.Contract | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -102,14 +106,42 @@ function NegotiationDashboard() {
   const [buyerInfo, setBuyerInfo] = useState<AgentInfo | null>(null);
   const [sellerInfo, setSellerInfo] = useState<AgentInfo | null>(null);
   const [dealtx, setDealtx] = useState<string | null>(null);
+  const [sessionInput, setSessionInput] = useState("");
+  const [totalSessions, setTotalSessions] = useState(0);
+  const [readonly, setReadonly] = useState(false);
+  const offersEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    offersEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [offers]);
 
   const initProvider = useCallback(async () => {
-    if (typeof window === "undefined" || !(window as any).ethereum) return;
-    const p = new ethers.BrowserProvider((window as any).ethereum);
+    let p: ethers.AbstractProvider;
+    let isReadonly = true;
+
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      try {
+        p = new ethers.BrowserProvider((window as any).ethereum);
+        isReadonly = false;
+      } catch {
+        p = getReadonlyProvider();
+      }
+    } else {
+      p = getReadonlyProvider();
+    }
+
     setProvider(p);
+    setReadonly(isReadonly);
+
     if (ENGINE_ADDRESS) {
       const c = new ethers.Contract(ENGINE_ADDRESS, ENGINE_ABI, p);
       setEngine(c);
+      try {
+        const total = await c.getTotalSessions();
+        setTotalSessions(Number(total));
+      } catch (e) {
+        console.warn("Cannot read contract state. Are contracts deployed?", e);
+      }
     }
     if (REGISTRY_ADDRESS) {
       const c = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, p);
@@ -126,27 +158,12 @@ function NegotiationDashboard() {
         reputation: Number(rep) / 1000,
         dealsCompleted: Number(a.dealsCompleted),
         totalEarned: Number(a.totalEarnedWei),
+        wallet: address,
       };
     } catch {
-      return { name: "Unknown", reputation: 0, dealsCompleted: 0, totalEarned: 0 };
+      return { name: "Unknown", reputation: 0, dealsCompleted: 0, totalEarned: 0, wallet: address };
     }
   }, []);
-
-  const listenForEvents = useCallback(async (sid: string) => {
-    if (!engine) return;
-    const filter = engine.filters.OfferSubmitted(sid);
-    engine.on(filter, (sessionId: string, round: bigint, role: string, amount: bigint) => {
-      const usdc = weiToUsdc(Number(amount));
-      setOffers((prev) => [
-        ...prev,
-        { round: Number(round), role, amount: usdc, timestamp: Date.now() },
-      ]);
-    });
-    const dealFilter = engine.filters.DealReached(sid);
-    engine.on(dealFilter, (sessionId: string, price: bigint) => {
-      setDealtx(`Deal at ${weiToUsdc(Number(price)).toFixed(2)} USDC`);
-    });
-  }, [engine]);
 
   const pollSession = useCallback(async () => {
     if (!engine || !sessionId) return;
@@ -179,6 +196,38 @@ function NegotiationDashboard() {
       }
       setChartData(points);
 
+      if (data.buyerOffers.length > 0 || data.sellerOffers.length > 0) {
+        const latestRound = Math.max(data.buyerOffers.length, data.sellerOffers.length) - 1;
+        const existingRounds = new Set(offers.map((o) => `${o.round}:${o.role}`));
+        const newOffers: OfferEvent[] = [];
+
+        if (data.buyerOffers.length > latestRound) {
+          const key = `${data.buyerOffers.length - 1}:buyer`;
+          if (!existingRounds.has(key)) {
+            newOffers.push({
+              round: data.buyerOffers.length - 1,
+              role: "buyer",
+              amount: data.buyerOffers[data.buyerOffers.length - 1],
+              timestamp: Math.floor(Date.now() / 1000),
+            });
+          }
+        }
+        if (data.sellerOffers.length > latestRound) {
+          const key = `${data.sellerOffers.length - 1}:seller`;
+          if (!existingRounds.has(key)) {
+            newOffers.push({
+              round: data.sellerOffers.length - 1,
+              role: "seller",
+              amount: data.sellerOffers[data.sellerOffers.length - 1],
+              timestamp: Math.floor(Date.now() / 1000),
+            });
+          }
+        }
+        if (newOffers.length > 0) {
+          setOffers((prev) => [...prev, ...newOffers]);
+        }
+      }
+
       if (registry) {
         if (data.buyer) {
           const b = await fetchAgentInfo(data.buyer, registry);
@@ -189,22 +238,34 @@ function NegotiationDashboard() {
           setSellerInfo(s);
         }
       }
+
+      if (data.status === 2 && dealtx === null) {
+        setDealtx(`Deal at ${data.agreedPrice.toFixed(2)} USDC`);
+      }
     } catch (e) {
       console.error("Poll error", e);
     }
-  }, [engine, sessionId, registry, fetchAgentInfo]);
+  }, [engine, sessionId, registry, fetchAgentInfo, offers, dealtx]);
+
+  const loadSession = useCallback(() => {
+    if (!sessionInput.trim()) return;
+    const sid = sessionInput.trim().startsWith("0x") ? sessionInput.trim() : `0x${sessionInput.trim()}`;
+    setSessionId(sid);
+    setOffers([]);
+    setDealtx(null);
+  }, [sessionInput]);
 
   useEffect(() => {
     initProvider();
   }, [initProvider]);
 
   useEffect(() => {
-    if (!sessionId) return;
-    listenForEvents(sessionId);
-    pollSession();
-    const interval = setInterval(pollSession, 5000);
-    return () => clearInterval(interval);
-  }, [sessionId, listenForEvents, pollSession]);
+    if (provider && engine && sessionId) {
+      pollSession();
+      const interval = setInterval(pollSession, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [sessionId, pollSession, provider, engine]);
 
   const getLatestOffers = () => {
     if (!session) return { bid: 0, ask: 0 };
@@ -223,7 +284,37 @@ function NegotiationDashboard() {
   const gap = gapPercent();
 
   return (
-    <>
+    <div id="dashboard">
+      {readonly && ENGINE_ADDRESS && (
+        <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-700/40 rounded-xl text-sm text-yellow-300">
+          Read-only mode — watching contract at {truncateAddr(ENGINE_ADDRESS)} on Fuji C-Chain
+        </div>
+      )}
+
+      <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 mb-6">
+        <div className="flex items-center gap-4">
+          <input
+            type="text"
+            placeholder="Enter session ID (0x...)"
+            value={sessionInput}
+            onChange={(e) => setSessionInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && loadSession()}
+            className="flex-1 bg-gray-800 text-white px-4 py-2.5 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500 font-mono text-sm placeholder:text-gray-500"
+          />
+          <button
+            onClick={loadSession}
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-500 transition-colors"
+          >
+            Track Session
+          </button>
+        </div>
+        {totalSessions > 0 && (
+          <div className="mt-2 text-xs text-gray-500">
+            Total sessions on contract: {totalSessions}
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
         <div>
           <h2 className="text-2xl font-bold text-white">Negotiation Monitor</h2>
@@ -239,6 +330,7 @@ function NegotiationDashboard() {
                 </div>
                 <span className="text-sm font-mono">{buyerInfo.reputation.toFixed(1)}</span>
               </div>
+              <div className="text-xs text-gray-500 font-mono">{truncateAddr(buyerInfo.wallet)}</div>
             </div>
           )}
           {sellerInfo && (
@@ -250,6 +342,7 @@ function NegotiationDashboard() {
                 </div>
                 <span className="text-sm font-mono">{sellerInfo.reputation.toFixed(1)}</span>
               </div>
+              <div className="text-xs text-gray-500 font-mono">{truncateAddr(sellerInfo.wallet)}</div>
             </div>
           )}
         </div>
@@ -306,28 +399,33 @@ function NegotiationDashboard() {
               )}
             </div>
           ) : (
-            <div className="text-gray-500 text-sm">Waiting for session data...</div>
+            <div className="text-gray-500 text-sm">Enter a session ID to start monitoring...</div>
           )}
         </div>
 
         <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
           <h2 className="text-lg font-semibold mb-4">Offer Feed</h2>
-          <div className="h-[300px] overflow-y-auto space-y-2">
+          <div className="h-[350px] overflow-y-auto space-y-2">
             {offers.length === 0 && (
-              <div className="text-gray-500 text-sm">No offers yet...</div>
+              <div className="text-gray-500 text-sm">Waiting for offers...</div>
             )}
             {offers.map((o, i) => (
               <div key={i} className={`p-2 rounded text-sm ${
                 o.role === "buyer" ? "bg-blue-900/20 border-l-2 border-blue-500" : "bg-green-900/20 border-l-2 border-green-500"
               }`}>
                 <div className="flex justify-between">
-                  <span className="font-mono text-xs text-gray-400">[Round {o.round + 1} · {o.role}]</span>
-                  <span className="font-mono text-xs text-gray-500">{formatTime(Math.floor(o.timestamp / 1000))}</span>
+                  <span className="font-mono text-xs text-gray-400">
+                    [Round {o.round + 1} &middot; {o.role === "buyer" ? "Buyer" : "Seller"}]
+                  </span>
+                  <span className="font-mono text-xs text-gray-500">{formatTime(o.timestamp)}</span>
                 </div>
-                <div className="font-mono font-bold">{o.amount.toFixed(2)} USDC</div>
-                {o.reasoning && <div className="text-xs text-gray-400 mt-1">"{o.reasoning}"</div>}
+                <div className="font-mono font-bold">
+                  {o.amount.toFixed(2)} USDC
+                </div>
+                {o.reasoning && <div className="text-xs text-gray-400 mt-1">&ldquo;{o.reasoning}&rdquo;</div>}
               </div>
             ))}
+            <div ref={offersEndRef} />
           </div>
         </div>
       </div>
@@ -364,7 +462,7 @@ function NegotiationDashboard() {
         {gap < 20 && gap > 0 && (
           <div className="mt-2 text-center">
             <span className="inline-block px-3 py-1 bg-yellow-900/40 text-yellow-300 rounded-full text-xs font-semibold animate-pulse">
-              Convergence zone — gap is {gap.toFixed(1)}%
+              Convergence zone &mdash; gap is {gap.toFixed(1)}%
             </span>
           </div>
         )}
@@ -377,8 +475,12 @@ function NegotiationDashboard() {
             <div>
               <div className="text-green-400 font-bold text-lg mb-2">Agreed: {session.agreedPrice.toFixed(2)} USDC</div>
               <div className="flex items-center gap-2 text-sm">
-                <div className="animate-spin h-3 w-3 border-2 border-green-500 border-t-transparent rounded-full" />
-                <span>Payment firing...</span>
+                {dealtx ? (
+                  <div className="w-3 h-3 bg-green-500 rounded-full" />
+                ) : (
+                  <div className="animate-spin h-3 w-3 border-2 border-green-500 border-t-transparent rounded-full" />
+                )}
+                <span>{dealtx ? "Payment confirmed" : "Payment firing..."}</span>
               </div>
               {dealtx && (
                 <div className="mt-2 p-2 bg-green-900/20 rounded text-sm">
@@ -404,7 +506,9 @@ function NegotiationDashboard() {
                 <div className="w-full bg-gray-700 rounded-full h-3">
                   <div className="bg-blue-500 h-3 rounded-full" style={{ width: `${Math.min(buyerInfo.reputation * 10, 100)}%` }} />
                 </div>
-                <div className="text-xs text-gray-400 mt-1">Deals: {buyerInfo.dealsCompleted}</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Wallet: {truncateAddr(buyerInfo.wallet)} &middot; Deals: {buyerInfo.dealsCompleted}
+                </div>
               </div>
             )}
             {sellerInfo && (
@@ -417,14 +521,14 @@ function NegotiationDashboard() {
                   <div className="bg-green-500 h-3 rounded-full" style={{ width: `${Math.min(sellerInfo.reputation * 10, 100)}%` }} />
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
-                  Deals: {sellerInfo.dealsCompleted} · Earned: {weiToUsdc(sellerInfo.totalEarned).toFixed(2)} USDC
+                  Wallet: {truncateAddr(sellerInfo.wallet)} &middot; Deals: {sellerInfo.dealsCompleted} &middot; Earned: {weiToUsdc(sellerInfo.totalEarned).toFixed(2)} USDC
                 </div>
               </div>
             )}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -433,7 +537,6 @@ export default function Home() {
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100">
       <div className="px-4 md:px-8 pt-8 md:pt-12 pb-6 flex flex-col items-center">
         <Hero />
-        <LogoMarquee />
       </div>
 
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 mt-8">

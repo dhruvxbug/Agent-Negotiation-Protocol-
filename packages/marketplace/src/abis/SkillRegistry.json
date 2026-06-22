@@ -1,0 +1,316 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum SkillRegistry.SkillType",
+        "name": "skill",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "sdkVersion",
+        "type": "string"
+      }
+    ],
+    "name": "SkillAttested",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum SkillRegistry.SkillType",
+        "name": "skill",
+        "type": "uint8"
+      }
+    ],
+    "name": "SkillRevoked",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "agentSkills",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum SkillRegistry.SkillType",
+        "name": "skill",
+        "type": "uint8"
+      },
+      {
+        "internalType": "string",
+        "name": "sdkVersion",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "framework",
+        "type": "string"
+      }
+    ],
+    "name": "attestSkill",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "name": "attestations",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "internalType": "enum SkillRegistry.SkillType",
+        "name": "skill",
+        "type": "uint8"
+      },
+      {
+        "internalType": "string",
+        "name": "sdkVersion",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "framework",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "attestedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "isActive",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "agent",
+        "type": "address"
+      }
+    ],
+    "name": "getAgentSkills",
+    "outputs": [
+      {
+        "internalType": "uint8[]",
+        "name": "",
+        "type": "uint8[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "internalType": "enum SkillRegistry.SkillType",
+        "name": "skill",
+        "type": "uint8"
+      }
+    ],
+    "name": "getAttestation",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "agent",
+            "type": "address"
+          },
+          {
+            "internalType": "enum SkillRegistry.SkillType",
+            "name": "skill",
+            "type": "uint8"
+          },
+          {
+            "internalType": "string",
+            "name": "sdkVersion",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "framework",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "attestedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "isActive",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct SkillRegistry.SkillAttestation",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum SkillRegistry.SkillType",
+        "name": "skill",
+        "type": "uint8"
+      }
+    ],
+    "name": "getSkillHolders",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "internalType": "enum SkillRegistry.SkillType",
+        "name": "skill",
+        "type": "uint8"
+      }
+    ],
+    "name": "hasSkill",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "agent",
+        "type": "address"
+      }
+    ],
+    "name": "isFullyCapable",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum SkillRegistry.SkillType",
+        "name": "skill",
+        "type": "uint8"
+      }
+    ],
+    "name": "revokeSkill",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "skillHolders",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

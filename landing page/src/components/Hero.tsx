@@ -83,7 +83,7 @@ export default function Hero() {
 						type="button"
 						className="ml-1 flex items-center gap-1 bg-white px-5 py-2 rounded-full text-[12px] font-semibold text-[#0a1b33] border border-slate-200/60 shadow-sm hover:border-slate-300 transition-all cursor-pointer"
 					>
-						Get in touch
+						Build your agent
 						<ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} />
 					</button>
 				</motion.nav>

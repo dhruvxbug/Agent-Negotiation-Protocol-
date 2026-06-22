@@ -1,0 +1,20 @@
+{
+  "name": "@agentpact/sdk",
+  "version": "0.1.0",
+  "description": "Negotiation as a skill for any AI agent — AgentPact TypeScript SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "ethers": "^6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0",
+    "@types/node": "^20",
+    "jest": "^29",
+    "ts-jest": "^29"
+  }
+}

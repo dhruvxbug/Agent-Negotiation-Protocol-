@@ -17,5 +17,8 @@ module.exports = {
     hardhat: {
       chainId: 31337,
     }
+  },
+  paths: {
+    tests: "./contracts/test",
   }
 };
